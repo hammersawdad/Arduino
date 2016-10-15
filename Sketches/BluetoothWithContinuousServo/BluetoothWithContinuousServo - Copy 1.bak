@@ -1,0 +1,182 @@
+#include <Servo.h>
+/**********************************/
+Servo mServoA;  // create servo object to control a servo
+Servo mServoB;  // create servo object to control a servo
+
+String mIncomingMessageText = "";
+
+
+const int PIN_LED = 13;//the number of the led pin
+const int PIN_SERVO_A = 9;     // the number of the pushbutton pin
+const int PIN_SERVO_B = 10;     // the number of the pushbutton pin
+
+
+// Speeds:  0 = Full Left;   180 = Full Right;  90 = Stop;
+
+const int LEFT_FAST_POSITION = 30;
+const int LEFT_SLOW_POSITION = 70;
+const int STOP_POSITION = 90;    
+const int RIGHT_SLOW_POSITION = 110;
+const int RIGHT_FAST_POSITION = 150;  
+
+const int STOP_RIGHT_POSITION = 92;    // Adjusted for a Servo that isn't perfect.
+
+
+const char MESSAGE_START = '*';
+const char MESSAGE_END = '#';
+const char MESSAGE_DELIMITER = '|';
+/**********************************/
+void setup()
+{
+  pinMode(PIN_LED,OUTPUT);     //initialize the led pin as output
+  mServoA.attach(PIN_SERVO_A);  // attaches the servo on pin 9 to the servo object
+  mServoB.attach(PIN_SERVO_B);  // attaches the servo on pin 9 to the servo object
+  Serial.begin(9600);       // start serial communication at 115200bps
+}
+/**********************************/
+void loop()
+{
+  char incomingByte;
+  String messageAction;
+  String messageValue;
+
+  
+  if( Serial.available() > 0 )       // if data is available to read
+  {
+    incomingByte = Serial.read();         // read it and store it in the char variable
+    Serial.println(incomingByte);
+
+    // Append the latest character
+    mIncomingMessageText += incomingByte;
+
+      Serial.println("Incoming Text:" + mIncomingMessageText);
+
+    if (incomingByte == MESSAGE_END)
+    {
+      Serial.println("Full Incoming Text:" + mIncomingMessageText);
+
+      
+      // Parse the full message text
+      parseMessage(mIncomingMessageText, messageAction, messageValue);
+
+      handleMessage(messageAction, messageValue);
+
+      // Clear the message text variable
+      mIncomingMessageText = "";
+    }
+ 
+  }
+}
+/************************************/
+
+void parseMessage(String fullMessage, String &messageAction, String &messageValue)
+{
+  // TODO: this needs much better validation
+  Serial.println("FULL:" + fullMessage);
+
+  String parsedMessage = fullMessage;
+   
+  // Remove the first character
+  parsedMessage.remove(0,1);
+  // Remove the last character
+  parsedMessage.remove(parsedMessage.length() - 1);
+  // Split the message by the delimiter
+  int delimiterPos = parsedMessage.indexOf(MESSAGE_DELIMITER);
+  
+  messageAction = parsedMessage.substring(0,delimiterPos);
+  messageValue = parsedMessage.substring(delimiterPos + 1);
+
+  Serial.println("A:" + messageAction);
+  Serial.println("V:" + messageValue);
+}
+
+void handleMessage(String messageAction, String messageValue)
+{
+      // Hand off the Message Value to the appropriate handler
+       if (messageAction == "1")
+       {
+          handleMoveMessage(messageValue);
+       }
+       if (messageAction == "2")
+       {
+          handleLedMessage(messageValue);
+       }
+  
+}
+void handleMoveMessage(String message)
+{
+  /*
+   * The message has two parts: Direction and Speed
+   * The two parts are deliminated with a space character
+   * Direction options:
+   * S = Stop
+   * F = Forward (straight)
+   * B = Backward (straight)
+   * R = Right
+   * L = Left
+   * 
+   * Speed options:
+   * S = slow
+   * F = fast
+   * 
+   *  TODO: Implement Fast/Slow
+   * 
+   */
+    int delimiterPos = message.indexOf(' ');
+  
+    String directionValue = message.substring(0,delimiterPos);
+    String speedValue = message.substring(delimiterPos + 1);
+
+//    int xPos = xPosString.toInt();
+//    int yPos = yPosString.toInt();
+
+    if (directionValue == "S") {moveStop();}
+    if (directionValue == "F") {moveForward();}
+    if (directionValue == "B") {moveBackward();}
+    if (directionValue == "R") {moveRight();}
+    if (directionValue == "L") {moveLeft();}
+
+}
+void handleLedMessage(String message)
+{
+    if( message == "OFF" )
+    {
+        digitalWrite(PIN_LED, LOW);    // turn the LED off
+        delay(100);                  // waits for a second   
+    }
+  
+    if( message == "ON" )
+     {
+        digitalWrite(PIN_LED, HIGH);  // turn the LED on
+        delay(100);                  // waits for a second
+     }
+}
+
+void moveStop()
+{
+    mServoA.write(STOP_POSITION);
+    mServoB.write(STOP_RIGHT_POSITION);
+}
+void moveLeft()
+{
+    mServoA.write(RIGHT_SLOW_POSITION);
+    mServoB.write(LEFT_FAST_POSITION);
+}
+void moveRight()
+{
+    mServoA.write(RIGHT_FAST_POSITION);
+    mServoB.write(LEFT_SLOW_POSITION);
+}
+void moveForward()
+{
+    mServoA.write(RIGHT_FAST_POSITION);
+    mServoB.write(LEFT_FAST_POSITION);
+}
+void moveBackward()
+{
+    mServoA.write(LEFT_FAST_POSITION);
+    mServoB.write(RIGHT_FAST_POSITION);
+}
+
+
+
