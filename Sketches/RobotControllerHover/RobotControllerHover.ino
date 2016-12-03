@@ -176,7 +176,7 @@ void shoulderLeft()
 {
   if (mShoulderPos <= SHOULDER_MAX)
   {
-    mShoulderPos++;
+    mShoulderPos+=2;
     mServoShoulder.write(mShoulderPos);              
     Serial.println(mShoulderPos);
   }
@@ -186,7 +186,7 @@ void shoulderRight()
 {
   if (mShoulderPos >= SHOULDER_MIN)
   {
-    mShoulderPos--;
+    mShoulderPos-=2;
     mServoShoulder.write(mShoulderPos);
     Serial.println(mShoulderPos);
   }
@@ -208,7 +208,7 @@ void wristLeft()
 {
   if (mWristPos <= WRIST_MAX)
   {
-    mWristPos++;
+    mWristPos+=2;
     mServoWrist.write(mWristPos);              
     Serial.println(mWristPos);
   }
@@ -218,7 +218,7 @@ void wristRight()
 {
   if (mWristPos >= WRIST_MIN)
   {
-    mWristPos--;
+    mWristPos-=2;
     mServoWrist.write(mWristPos);
     Serial.println(mWristPos);
   }
@@ -240,7 +240,7 @@ void gripperOpen()
 {
   if (mGripperPos <= GRIPPER_MAX)
   {
-    mGripperPos++;
+    mGripperPos+=2;
     mServoGripper.write(mGripperPos);              
     Serial.println(mGripperPos);
   }
@@ -250,7 +250,7 @@ void gripperClose()
 {
   if (mGripperPos >= GRIPPER_MIN)
   {
-    mGripperPos--;
+    mGripperPos-=2;
     mServoGripper.write(mGripperPos);
     Serial.println(mGripperPos);
   }
