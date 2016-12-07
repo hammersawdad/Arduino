@@ -17,17 +17,20 @@ const int PIN_SHOULDER = 8;
 
 const int WRIST_MIN = 0;
 const int WRIST_MAX = 180;
+const int WRIST_ADJUSTMENT = 1;
 const int SHOULDER_MIN = 0;
 const int SHOULDER_MAX = 180;
+const int SHOULDER_ADJUSTMENT = 2;
 const int GRIPPER_NETURAL = 90;    
-const int GRIPPER_MAX = 115;
-const int GRIPPER_MIN = 15;
+const int GRIPPER_MAX = 90;
+const int GRIPPER_MIN = 30;
+const int GRIPPER_ADJUSTMENT = 2;
 const int GRIPPER_DELAY_TIME = 10;
 
 const int MAX_INPUT_VALUES = 20;
-const char MESSAGE_START = '*';
-const char MESSAGE_END = '#';
-const char MESSAGE_DELIMITER = '|';
+const char MESSAGE_START = '{';
+const char MESSAGE_END = '}';
+const char MESSAGE_DELIMITER = ':';
 
 // Continuous Rotation Speeds:  0 = Full Left;   180 = Full Right;  90 = Stop;
 
@@ -164,11 +167,11 @@ void handleShoulderMessage(String message)
 {
     if( message == "OPEN" )
     {
-        shoulderLeft();   
+        shoulderRight();   
     }
     if( message == "CLOSE" )
      {
-        shoulderRight();   
+        shoulderLeft();   
      }
 }
 
@@ -176,7 +179,7 @@ void shoulderLeft()
 {
   if (mShoulderPos <= SHOULDER_MAX)
   {
-    mShoulderPos+=2;
+    mShoulderPos+=SHOULDER_ADJUSTMENT;
     mServoShoulder.write(mShoulderPos);              
     Serial.println(mShoulderPos);
   }
@@ -186,7 +189,7 @@ void shoulderRight()
 {
   if (mShoulderPos >= SHOULDER_MIN)
   {
-    mShoulderPos-=2;
+    mShoulderPos-=SHOULDER_ADJUSTMENT;
     mServoShoulder.write(mShoulderPos);
     Serial.println(mShoulderPos);
   }
@@ -196,19 +199,19 @@ void handleWristMessage(String message)
 {
     if( message == "OPEN" )
     {
-        wristLeft();
+        wristRight();
     }
     if( message == "CLOSE" )
-     {
-        wristRight();
-     }
+    {
+        wristLeft();
+    }
 }
 
 void wristLeft()
 {
   if (mWristPos <= WRIST_MAX)
   {
-    mWristPos+=2;
+    mWristPos+=WRIST_ADJUSTMENT;
     mServoWrist.write(mWristPos);              
     Serial.println(mWristPos);
   }
@@ -218,7 +221,7 @@ void wristRight()
 {
   if (mWristPos >= WRIST_MIN)
   {
-    mWristPos-=2;
+    mWristPos-=WRIST_ADJUSTMENT;
     mServoWrist.write(mWristPos);
     Serial.println(mWristPos);
   }
@@ -240,7 +243,7 @@ void gripperOpen()
 {
   if (mGripperPos <= GRIPPER_MAX)
   {
-    mGripperPos+=2;
+    mGripperPos+=GRIPPER_ADJUSTMENT;
     mServoGripper.write(mGripperPos);              
     Serial.println(mGripperPos);
   }
@@ -250,7 +253,7 @@ void gripperClose()
 {
   if (mGripperPos >= GRIPPER_MIN)
   {
-    mGripperPos-=2;
+    mGripperPos-=GRIPPER_ADJUSTMENT;
     mServoGripper.write(mGripperPos);
     Serial.println(mGripperPos);
   }
