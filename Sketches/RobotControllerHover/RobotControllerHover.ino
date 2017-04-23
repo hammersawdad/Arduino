@@ -2,25 +2,30 @@
 /**********************************/
 Servo mServoA;  // create servo object to control a servo
 Servo mServoB;  // create servo object to control a servo
-Servo mServoGripper;
-Servo mServoWrist;
+Servo mServoHead;
 Servo mServoShoulder;
+Servo mServoWrist;
+Servo mServoGripper;
 
 String mIncomingMessageText = "";
 
-const int PIN_LED = 13;//the number of the led pin
-const int PIN_SERVO_A = 9;     // the number of the pushbutton pin
+const int PIN_LED = 7;          //the number of the led pin
+const int PIN_SERVO_A = 9;      // the number of the pushbutton pin
 const int PIN_SERVO_B = 10;     // the number of the pushbutton pin
+const int PIN_HEAD = 13;
+const int PIN_SHOULDER = 8;
 const int PIN_WRIST = 11;
 const int PIN_GRIPPER = 12;
-const int PIN_SHOULDER = 8;
 
-const int WRIST_MIN = 0;
-const int WRIST_MAX = 180;
-const int WRIST_ADJUSTMENT = 1;
+const int HEAD_MIN = 0;
+const int HEAD_MAX = 180;
+const int HEAD_ADJUSTMENT = 2;
 const int SHOULDER_MIN = 0;
 const int SHOULDER_MAX = 180;
 const int SHOULDER_ADJUSTMENT = 2;
+const int WRIST_MIN = 0;
+const int WRIST_MAX = 180;
+const int WRIST_ADJUSTMENT = 2;
 const int GRIPPER_NETURAL = 90;    
 const int GRIPPER_MAX = 90;
 const int GRIPPER_MIN = 30;
@@ -38,6 +43,7 @@ const char MESSAGE_DELIMITER = ':';
 int mWristPos = 90;
 int mGripperPos = 90;
 int mShoulderPos = 90;
+int mHeadPos = 90;
 
 /**********************************/
 void setup()
@@ -47,6 +53,7 @@ void setup()
 
   mServoA.attach(PIN_SERVO_A);
   mServoB.attach(PIN_SERVO_B);
+  mServoHead.attach(PIN_HEAD);
   mServoShoulder.attach(PIN_SHOULDER);
   mServoWrist.attach(PIN_WRIST);
   mServoGripper.attach(PIN_GRIPPER);
@@ -130,6 +137,10 @@ void handleMessage(String messageAction, String messageValue)
        {
           handleGripperMessage(messageValue);
        }
+       if (messageAction == "6")
+       {
+          handleHeadMessage(messageValue);
+       }
 }
 
 void handleSteerMessage(String message)
@@ -161,6 +172,38 @@ void handleLedMessage(String message)
         digitalWrite(PIN_LED, HIGH);  // turn the LED on
         delay(100);                  // waits for a second
      }
+}
+
+void handleHeadMessage(String message)
+{
+    if( message == "OPEN" )
+    {
+        headRight();   
+    }
+    if( message == "CLOSE" )
+     {
+        headLeft();   
+     }
+}
+
+void headLeft()
+{
+  if (mHeadPos <= HEAD_MAX)
+  {
+    mHeadPos+=HEAD_ADJUSTMENT;
+    mServoHead.write(mHeadPos);              
+    Serial.println(mHeadPos);
+  }
+}
+
+void headRight()
+{
+  if (mHeadPos >= HEAD_MIN)
+  {
+    mHeadPos-=HEAD_ADJUSTMENT;
+    mServoHead.write(mHeadPos);
+    Serial.println(mHeadPos);
+  }
 }
 
 void handleShoulderMessage(String message)
