@@ -1,4 +1,4 @@
-int buzzer = 12;//the pin of the active buzzer
+int buzzer = 4;//the pin of the active buzzer
 void setup()
 {
  pinMode(buzzer,OUTPUT);//initialize the buzzer pin as an output
@@ -17,7 +17,7 @@ void loop()
     delay(1);//wait for 1ms
     }
     //output another frequency
-     for(i=0;i<100;i++)
+     for(i=0;i<40;i++)
       {
         digitalWrite(buzzer,HIGH);
         delay(2);//wait for 2ms
