@@ -40,7 +40,6 @@ Servo mServoShoulder;
 Servo mServoWrist;
 Servo mServoGripper;
 
-String mIncomingMessageText = "";
 
 const int MAX_INPUT_VALUES = 20;
 const char MESSAGE_START = '{';
@@ -85,36 +84,54 @@ void setup()
 /**********************************/
 void loop()
 {
-  // Serial input
-  char incomingByte;
-  String messageAction;
-  String messageValue;
 
   // Read data from the Serial/Bluetooth input
   if( Serial.available() > 0 )       // if data is available to read
   {
-    incomingByte = Serial.read();         // read it and store it in the char variable
-
-    // Append the latest character
-    mIncomingMessageText += incomingByte;
-
-    if (incomingByte == MESSAGE_END)
-    {
-      // Parse the full message text
-      parseMessage(mIncomingMessageText, messageAction, messageValue);
-
-      // Pass the message off to the appropriate handler method
-      handleMessage(messageAction, messageValue);
-
-      // Clear the message text variable
-      mIncomingMessageText = "";
-    }
+      ReadBluetoothMessage();
   }
 
   // Check data from the Laser sensor
   ReadUltrasonicLaser();
 }
 
+void ReadBluetoothMessage()
+{
+    // Serial input
+    char incomingByte;
+    String messageText = "";
+    String messageAction;
+    String messageValue;
+    int loopCounter = 0;
+
+    while(true)
+    {
+        // Protect against an infinite loop
+        loopCounter++;
+        if(loopCounter > 100)
+        {
+          break;
+        }
+
+        // Read from the Serial/Bluetooth input
+        incomingByte = Serial.read();
+    
+        // Append the latest character
+        messageText += incomingByte;
+    
+        if (incomingByte == MESSAGE_END)
+        {
+          // Parse the full message text
+          parseMessage(messageText, messageAction, messageValue);
+    
+          // Pass the message off to the appropriate handler method
+          handleMessage(messageAction, messageValue);
+          
+          // End the loop
+          break;
+        }
+    }
+}
 
 /************************************/
 
@@ -366,6 +383,7 @@ void ReadUltrasonicLaser()
 
   playSound();
 }
+
 void LaserOn()
 {
     if (_ledFlashOn)
