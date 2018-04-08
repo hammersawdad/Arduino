@@ -1,10 +1,5 @@
 #include <Servo.h>
 
-#define PIN_LASERBUZZER 2
-#define PIN_LASERLED 3
-#define PIN_SONICECHO 4
-#define PIN_SONICTRIGGER 5
-
 #define PIN_EYES 7
 #define PIN_WHEEL_LEFT 9
 #define PIN_WHEEL_RIGHT 10
@@ -22,13 +17,10 @@
 #define WRIST_MIN 0
 #define WRIST_MAX 180
 #define WRIST_ADJUSTMENT 2
-#define GRIPPER_NETURAL 90    
 #define GRIPPER_MAX 90
 #define GRIPPER_MIN 30
 #define GRIPPER_ADJUSTMENT 2
 #define GRIPPER_DELAY_TIME 10
-
-#define LASER_TRIGGER_CENTIMETERS 50
 
 /**********************************/
 // Servos
@@ -40,7 +32,8 @@ Servo mServoShoulder;
 Servo mServoWrist;
 Servo mServoGripper;
 
-
+// Bluetooth messages
+String mIncomingMessageText;
 const int MAX_INPUT_VALUES = 20;
 const char MESSAGE_START = '{';
 const char MESSAGE_END = '}';
@@ -48,13 +41,21 @@ const char MESSAGE_DELIMITER = ':';
 
 // Continuous Rotation Speeds:  0 = Full Left;   180 = Full Right;  90 = Stop;
 int mWristPos = 90;
-int mGripperPos = 90;
+int mGripperPos = 60;
 int mShoulderPos = 90;
 int mHeadPos = 90;
 
 // Laser gun settings
 bool mSonicActive = false;
-bool _ledFlashOn = false;
+bool mLaserFlashOn = false;
+
+// Servo switches
+bool mServoMessageLeft = false;
+bool mServoMessageRight = false;
+bool mServoMessageHead = false;
+bool mServoMessageShoulder = false;
+bool mServoMessageWrist = false;
+bool mServoMessageGripper = false;
 
 /**********************************/
 void setup()
@@ -73,63 +74,70 @@ void setup()
   mServoShoulder.attach(PIN_SHOULDER);
   mServoWrist.attach(PIN_WRIST);
   mServoGripper.attach(PIN_GRIPPER);
-
-  // Laser gun
-  pinMode(PIN_LASERBUZZER,OUTPUT);
-  pinMode(PIN_SONICTRIGGER, OUTPUT);
-  pinMode(PIN_SONICECHO, INPUT);
-  pinMode(PIN_LASERLED, OUTPUT);
 }
 
 /**********************************/
+
 void loop()
 {
-
   // Read data from the Serial/Bluetooth input
-  if( Serial.available() > 0 )       // if data is available to read
+  if( Serial.available() > 0 )
   {
-      ReadBluetoothMessage();
+    ReadBluetoothMessage();
   }
+  else
+  {
+    // TODO: Add a timer to reset servos.  
+    // If no message has been sent for a servo, then reset it.
+    // Only check for this every few seconds
+    //SetServoDefaults();
+  }
+}
 
-  // Check data from the Laser sensor
-  ReadUltrasonicLaser();
+void SetServoDefaults()
+{
+    // Center all servos that haven't had a message sent to them, yet
+
+    if (mServoMessageHead == false)
+    {
+        mServoHead.write(mHeadPos);              
+    }
+    if (mServoMessageShoulder == false)
+    {
+        mServoShoulder.write(mShoulderPos);                    
+    }
+    if (mServoMessageWrist == false)
+    {
+        mServoWrist.write(mWristPos);
+    }
+    if (mServoMessageGripper == false)
+    {
+        mServoGripper.write(mGripperPos);              
+    }
 }
 
 void ReadBluetoothMessage()
 {
-    // Serial input
     char incomingByte;
-    String messageText = "";
     String messageAction;
     String messageValue;
-    int loopCounter = 0;
 
-    while(true)
+    // read it and store it in the char variable
+    incomingByte = Serial.read();         
+
+    // Append the latest character
+    mIncomingMessageText += incomingByte;
+
+    if (incomingByte == MESSAGE_END)
     {
-        // Protect against an infinite loop
-        loopCounter++;
-        if(loopCounter > 100)
-        {
-          break;
-        }
+      // Parse the full message text
+      parseMessage(mIncomingMessageText, messageAction, messageValue);
 
-        // Read from the Serial/Bluetooth input
-        incomingByte = Serial.read();
-    
-        // Append the latest character
-        messageText += incomingByte;
-    
-        if (incomingByte == MESSAGE_END)
-        {
-          // Parse the full message text
-          parseMessage(messageText, messageAction, messageValue);
-    
-          // Pass the message off to the appropriate handler method
-          handleMessage(messageAction, messageValue);
-          
-          // End the loop
-          break;
-        }
+      // Pass the message off to the appropriate handler method
+      handleMessage(messageAction, messageValue);
+
+      // Clear the message text variable
+      mIncomingMessageText = "";
     }
 }
 
@@ -197,6 +205,9 @@ void handleSteerMessage(String message)
 
     parseString(message, delimiter, steerValues);
 
+    mServoMessageLeft = true;
+    mServoMessageRight = true;
+
     mServoLeft.write(steerValues[0].toInt());
     mServoRight.write(steerValues[1].toInt());
 }
@@ -218,6 +229,8 @@ void handleLedMessage(String message)
 
 void handleHeadMessage(String message)
 {
+    mServoMessageHead = true;
+
     if( message == "OPEN" )
     {
         headRight();   
@@ -250,6 +263,8 @@ void headRight()
 
 void handleShoulderMessage(String message)
 {
+    mServoMessageShoulder = true;
+    
     if( message == "OPEN" )
     {
         shoulderRight();   
@@ -282,6 +297,8 @@ void shoulderRight()
 
 void handleWristMessage(String message)
 {
+    mServoMessageWrist = true;
+
     if( message == "OPEN" )
     {
         wristRight();
@@ -314,6 +331,8 @@ void wristRight()
 
 void handleGripperMessage(String message)
 {
+    mServoMessageGripper = true;
+
     if( message == "OPEN" )
     {
         gripperOpen();
@@ -344,88 +363,7 @@ void gripperClose()
   }
 }
 
-/************************************/
 
-void ReadUltrasonicLaser()
-{
-  long duration, distance;
-
-  // Send an ultrasonic signal
-  digitalWrite(PIN_SONICTRIGGER, LOW);
-  delayMicroseconds(2);
-  digitalWrite(PIN_SONICTRIGGER, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(PIN_SONICTRIGGER, LOW);
-
-  // Get the time it took for the signal to echo back
-  duration = pulseIn(PIN_SONICECHO, HIGH);
-
-  // Convert the time into centimeters
-  distance = (duration/2) / 29.1;
-
-  Serial.print("Sonic: ");
-  Serial.print(distance);
-  Serial.print(" cm");
-
-  // Determine whether the obsticle is too close
-  if (distance > 0 && distance < LASER_TRIGGER_CENTIMETERS) 
-  {
-    mSonicActive = true;
-    LaserOn();
-  }
-  else 
-  {
-    Serial.print(" - Out of range.");
-    mSonicActive = false;
-    LaserOff();
-  }
-  Serial.println("");
-
-  playSound();
-}
-
-void LaserOn()
-{
-    if (_ledFlashOn)
-    {
-      _ledFlashOn = false;
-      digitalWrite(PIN_LASERLED,LOW);
-    }
-    else
-    {
-      _ledFlashOn = true;
-      digitalWrite(PIN_LASERLED,HIGH);
-    }
-}
-
-void LaserOff()
-{
-    digitalWrite(PIN_LASERLED,LOW);
-}
-
-void playSound()
-{
-  unsigned char i;
-  if(mSonicActive)
-  {
-    //output an frequency
-    for(i=0;i<80;i++)
-    {
-      digitalWrite(PIN_LASERBUZZER,HIGH);
-      delay(1);//wait for 1ms
-      digitalWrite(PIN_LASERBUZZER,LOW);
-      delay(1);//wait for 1ms
-    }
-    //output another frequency
-    for(i=0;i<40;i++)
-    {
-      digitalWrite(PIN_LASERBUZZER,HIGH);
-      delay(2);//wait for 2ms
-      digitalWrite(PIN_LASERBUZZER,LOW);
-      delay(2);//wait for 2ms
-    }
-  }
-}
 /************************************/
 void parseString(String input, char delimiter, String *outputArray)
 {
