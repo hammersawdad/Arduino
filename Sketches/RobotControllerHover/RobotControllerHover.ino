@@ -1,12 +1,18 @@
 #include <Servo.h>
 
-#define PIN_EYES 7
-#define PIN_WHEEL_LEFT 9
-#define PIN_WHEEL_RIGHT 10
+#define PIN_EYES 2
 #define PIN_HEAD 13
-#define PIN_SHOULDER 8
+#define PIN_SHOULDER 10
 #define PIN_WRIST 11
 #define PIN_GRIPPER 12
+
+#define PIN_WHEEL_LEFT_EN 5
+#define PIN_WHEEL_LEFT_I1 4
+#define PIN_WHEEL_LEFT_I2 3
+
+#define PIN_WHEEL_RIGHT_EN 6
+#define PIN_WHEEL_RIGHT_I1 7
+#define PIN_WHEEL_RIGHT_I2 8
 
 #define HEAD_MIN 0
 #define HEAD_MAX 180
@@ -50,8 +56,6 @@ bool mSonicActive = false;
 bool mLaserFlashOn = false;
 
 // Servo switches
-bool mServoMessageLeft = false;
-bool mServoMessageRight = false;
 bool mServoMessageHead = false;
 bool mServoMessageShoulder = false;
 bool mServoMessageWrist = false;
@@ -60,11 +64,16 @@ bool mServoMessageGripper = false;
 /**********************************/
 void setup()
 {
-  Serial.begin(9600);       // start serial communication at 9600bps
+  // start serial communication at 9600bps
+  Serial.begin(9600);       
 
   // Wheels
-  mServoLeft.attach(PIN_WHEEL_LEFT);
-  mServoRight.attach(PIN_WHEEL_RIGHT);
+  pinMode(PIN_WHEEL_LEFT_EN, OUTPUT);
+  pinMode(PIN_WHEEL_LEFT_I1, OUTPUT);
+  pinMode(PIN_WHEEL_LEFT_I2, OUTPUT);
+  pinMode(PIN_WHEEL_RIGHT_EN, OUTPUT);
+  pinMode(PIN_WHEEL_RIGHT_I1, OUTPUT);
+  pinMode(PIN_WHEEL_RIGHT_I2, OUTPUT);
 
   // Head
   pinMode(PIN_EYES,OUTPUT);
@@ -197,19 +206,44 @@ void handleSteerMessage(String message)
 {
   /*
    * There should be two numbers, separated by a space
-   * The first number is the speed for Servo A
-   * The second number is the speed for Servo B
+   * The first number is the speed for Motor A
+   * The second number is the speed for Motor B
    */
     char delimiter = ' ';
     String steerValues[MAX_INPUT_VALUES];
 
     parseString(message, delimiter, steerValues);
 
-    mServoMessageLeft = true;
-    mServoMessageRight = true;
+    int leftValue = steerValues[0].toInt();
+    int rightValue = steerValues[1].toInt();
 
-    mServoLeft.write(steerValues[0].toInt());
-    mServoRight.write(steerValues[1].toInt());
+    // Set the LEFT wheel
+    if (leftValue >= 0)
+    {
+      analogWrite(PIN_WHEEL_LEFT_EN, leftValue);
+      digitalWrite(PIN_WHEEL_LEFT_I1, HIGH);
+      digitalWrite(PIN_WHEEL_LEFT_I2, LOW);
+    }
+    else
+    {
+      analogWrite(PIN_WHEEL_LEFT_EN, leftValue * -1);
+      digitalWrite(PIN_WHEEL_LEFT_I1, LOW);
+      digitalWrite(PIN_WHEEL_LEFT_I2, HIGH);
+    }
+
+    // Set the RIGHT wheel
+    if (rightValue >= 0)
+    {
+      analogWrite(PIN_WHEEL_RIGHT_EN, rightValue);
+      digitalWrite(PIN_WHEEL_RIGHT_I1, HIGH);
+      digitalWrite(PIN_WHEEL_RIGHT_I2, LOW);
+    }
+    else
+    {
+      analogWrite(PIN_WHEEL_RIGHT_EN, rightValue * -1);
+      digitalWrite(PIN_WHEEL_RIGHT_I1, LOW);
+      digitalWrite(PIN_WHEEL_RIGHT_I2, HIGH);
+    }
 }
 
 void handleLedMessage(String message)
